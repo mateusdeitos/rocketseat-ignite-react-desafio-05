@@ -5,7 +5,6 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { RichText } from 'prismic-dom';
-import { useMemo } from 'react';
 import Header from '../../components/Header';
 
 import { getPrismicClient } from '../../services/prismic';
@@ -37,24 +36,23 @@ interface PostProps {
 export default function Post({ post }: PostProps): JSX.Element {
   const router = useRouter();
 
-  const minutesToRead = useMemo(() => {
-    return Math.ceil(
-      post.data.content
-        .map(content => {
-          const headingWords = +content.heading.split(' ').length;
-          const bodyWords = +RichText.asText(content.body).split(' ').length;
-          const total = headingWords + bodyWords;
-          return total;
-        })
-        .reduce((acc, value) => {
-          return acc + value;
-        }) / 200
-    );
-  }, [post.data.content]);
-
   if (router.isFallback) {
     return <h1>Carregando...</h1>;
   }
+
+  const minutesToRead = Math.ceil(
+    post.data.content
+      .map(content => {
+        const headingWords = +content.heading.split(' ').length;
+        const bodyWords = +RichText.asText(content.body).split(' ').length;
+        const total = headingWords + bodyWords;
+        return total;
+      })
+      .reduce((acc, value) => {
+        return acc + value;
+      }) / 200
+  );
+
   return (
     <>
       <Head>
@@ -135,13 +133,13 @@ export const getStaticProps: GetStaticProps<PostProps> = async ({ params }) => {
     uid: response.uid,
     first_publication_date: response.first_publication_date,
     data: {
-      title: response.data.title,
-      subtitle: response.data.subtitle,
-      author: response.data.author,
+      title: response?.data?.title,
+      subtitle: response?.data?.subtitle,
+      author: response?.data?.author,
       banner: {
-        url: response.data.banner.url,
+        url: response?.data?.banner.url,
       },
-      content: response.data.content.map(({ heading, body }) => ({
+      content: response?.data?.content.map(({ heading, body }) => ({
         body: body.map(({ text, type, spans }) => ({
           text,
           type,
