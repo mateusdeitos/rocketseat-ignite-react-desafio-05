@@ -232,7 +232,6 @@ describe('Post', () => {
 
   it('should be able to return prismic post document using getStaticProps', async () => {
     const routeParam = parse('como-utilizar-hooks');
-
     const postReturn = mockedGetByUIDReturn;
     const getStaticPropsContext: GetStaticPropsContext<ParsedUrlQuery> = {
       params: routeParam,

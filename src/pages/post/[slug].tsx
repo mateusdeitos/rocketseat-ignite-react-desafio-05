@@ -3,7 +3,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { RichText } from 'prismic-dom';
+import { useMemo } from 'react';
 import Header from '../../components/Header';
 
 import { getPrismicClient } from '../../services/prismic';
@@ -23,7 +25,7 @@ interface Post {
       heading: string;
       body: {
         text: string;
-      };
+      }[];
     }[];
   };
 }
@@ -33,6 +35,26 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps): JSX.Element {
+  const router = useRouter();
+
+  const minutesToRead = useMemo(() => {
+    return Math.ceil(
+      post.data.content
+        .map(content => {
+          const headingWords = +content.heading.split(' ').length;
+          const bodyWords = +RichText.asText(content.body).split(' ').length;
+          const total = headingWords + bodyWords;
+          return total;
+        })
+        .reduce((acc, value) => {
+          return acc + value;
+        }) / 200
+    );
+  }, [post.data.content]);
+
+  if (router.isFallback) {
+    return <h1>Carregando...</h1>;
+  }
   return (
     <>
       <Head>
@@ -49,7 +71,11 @@ export default function Post({ post }: PostProps): JSX.Element {
           <section className={styles.details}>
             <div>
               <img src="/calendar.svg" alt="Autor" />
-              <span>{post.first_publication_date}</span>
+              <span>
+                {format(new Date(post.first_publication_date), 'dd MMM yyyy', {
+                  locale: ptBR,
+                })}
+              </span>
             </div>
             <div>
               <img src="/user.svg" alt="Autor" />
@@ -57,7 +83,7 @@ export default function Post({ post }: PostProps): JSX.Element {
             </div>
             <div>
               <img src="/clock.svg" alt="Autor" />
-              <span>4 min</span>
+              <span>{minutesToRead} min</span>
             </div>
           </section>
           <section className={styles.content}>
@@ -70,7 +96,7 @@ export default function Post({ post }: PostProps): JSX.Element {
 
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: body.text,
+                    __html: RichText.asHtml(body),
                   }}
                 />
               </section>
@@ -83,9 +109,20 @@ export default function Post({ post }: PostProps): JSX.Element {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
+  const posts = await prismic.query('');
+
+  const results = posts.results.map(post => {
+    return {
+      params: {
+        slug: post.uid,
+      },
+    };
+  });
+
   return {
-    paths: [],
-    fallback: 'blocking',
+    paths: results,
+    fallback: true,
   };
 };
 
@@ -95,24 +132,22 @@ export const getStaticProps: GetStaticProps<PostProps> = async ({ params }) => {
   const response = await prismic.getByUID('posts', String(slug), {});
 
   const post = {
-    uid: slug,
-    first_publication_date: format(
-      new Date(response.first_publication_date),
-      'dd MMM yyyy',
-      { locale: ptBR }
-    ),
+    uid: response.uid,
+    first_publication_date: response.first_publication_date,
     data: {
-      title: RichText.asText(response.data.title),
-      subtitle: RichText.asText(response.data.subtitle),
-      author: RichText.asText(response.data.author),
+      title: response.data.title,
+      subtitle: response.data.subtitle,
+      author: response.data.author,
       banner: {
         url: response.data.banner.url,
       },
       content: response.data.content.map(({ heading, body }) => ({
-        body: {
-          text: RichText.asHtml(body),
-        },
-        heading: RichText.asText(heading),
+        body: body.map(({ text, type, spans }) => ({
+          text,
+          type,
+          spans,
+        })),
+        heading,
       })),
     },
   };

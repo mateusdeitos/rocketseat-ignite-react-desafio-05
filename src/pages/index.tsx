@@ -1,7 +1,6 @@
 import { GetStaticProps } from 'next';
 import Prismic from '@prismicio/client';
 import { format } from 'date-fns';
-import { RichText } from 'prismic-dom';
 import ptBR from 'date-fns/locale/pt-BR';
 import Head from 'next/head';
 import { useState } from 'react';
@@ -39,15 +38,17 @@ const fixResults = ({ uid, first_publication_date, data }: Post): Post => {
       { locale: ptBR }
     ),
     data: {
-      title: RichText.asText(data.title),
-      subtitle: RichText.asText(data.subtitle),
-      author: RichText.asText(data.author),
+      title: data.title,
+      subtitle: data.subtitle,
+      author: data.author,
     },
   };
 };
 
 export default function Home({ postsPagination }: HomeProps): JSX.Element {
-  const [posts, setPosts] = useState<Post[]>(postsPagination.results || []);
+  const [posts, setPosts] = useState<Post[]>(
+    postsPagination.results.map(fixResults) || []
+  );
   const [nextPage, setNextPage] = useState(postsPagination.next_page || '');
 
   const handleLoadMorePosts = (): void => {
@@ -105,7 +106,7 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
     { pageSize: 1 }
   );
 
-  const results = postsResponse.results.map(fixResults);
+  const { results } = postsResponse;
 
   return {
     props: {
