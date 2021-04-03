@@ -5,8 +5,8 @@ import { RichText } from 'prismic-dom';
 import ptBR from 'date-fns/locale/pt-BR';
 import Head from 'next/head';
 import { useState } from 'react';
+import Link from 'next/link';
 import { getPrismicClient } from '../services/prismic';
-
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 import Header from '../components/Header';
@@ -35,7 +35,7 @@ const fixResults = ({ uid, first_publication_date, data }: Post): Post => {
     uid,
     first_publication_date: format(
       new Date(first_publication_date),
-      "dd 'de' MMMM 'de' yyyy",
+      'dd MMM yyyy',
       { locale: ptBR }
     ),
     data: {
@@ -69,20 +69,22 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
       <Header />
       <main className={commonStyles.pageContainer}>
         {posts.map(({ uid, first_publication_date, data }) => (
-          <div key={uid} className={styles.post}>
-            <h3>{data.title}</h3>
-            <p>{data.subtitle}</p>
-            <footer>
-              <div>
-                <img src="/calendar.svg" alt="Data publicação" />
-                <span>{first_publication_date}</span>
-              </div>
-              <div>
-                <img src="/user.svg" alt="Autor" />
-                <span>{data.author}</span>
-              </div>
-            </footer>
-          </div>
+          <Link key={uid} href={`/post/${uid}`}>
+            <div className={styles.post}>
+              <h3>{data.title}</h3>
+              <p>{data.subtitle}</p>
+              <footer>
+                <div>
+                  <img src="/calendar.svg" alt="Data publicação" />
+                  <span>{first_publication_date}</span>
+                </div>
+                <div>
+                  <img src="/user.svg" alt="Autor" />
+                  <span>{data.author}</span>
+                </div>
+              </footer>
+            </div>
+          </Link>
         ))}
         {!!nextPage && (
           <div className={styles.loadMorePosts}>
