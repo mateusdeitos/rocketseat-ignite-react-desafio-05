@@ -78,4 +78,46 @@
 
 }
 
+.divider {
+  width: 100%;
+  border: 1px solid var(--gray-200);
+  margin-top: 6rem;
+  opacity: 0.1;
+}
+
+.navigationFooter {
+  display: flex;
+  flex-direction: row;
+  margin-top: 4.8rem;
+  margin-bottom: 8rem;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+
+  div {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+
+    &:hover {
+      span {
+        color: var(--highlight);
+      }
+    }
+
+    span {
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--gray-100);
+      transition: color 0.2s;
+    }
+
+    a {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--highlight);
+    }
+  }
+}
+
 

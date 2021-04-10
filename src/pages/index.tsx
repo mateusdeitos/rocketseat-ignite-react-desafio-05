@@ -9,6 +9,7 @@ import { getPrismicClient } from '../services/prismic';
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 import Header from '../components/Header';
+import { ExitPreviewButton } from '../components/ExitPreviewButton';
 
 interface Post {
   uid?: string;
@@ -27,16 +28,17 @@ interface PostPagination {
 
 interface HomeProps {
   postsPagination: PostPagination;
+  preview: boolean;
 }
 
 const fixResults = ({ uid, first_publication_date, data }: Post): Post => {
   return {
     uid,
-    first_publication_date: format(
-      new Date(first_publication_date),
-      'dd MMM yyyy',
-      { locale: ptBR }
-    ),
+    first_publication_date:
+      first_publication_date &&
+      format(new Date(first_publication_date), 'dd MMM yyyy', {
+        locale: ptBR,
+      }),
     data: {
       title: data.title,
       subtitle: data.subtitle,
@@ -45,7 +47,10 @@ const fixResults = ({ uid, first_publication_date, data }: Post): Post => {
   };
 };
 
-export default function Home({ postsPagination }: HomeProps): JSX.Element {
+export default function Home({
+  postsPagination,
+  preview,
+}: HomeProps): JSX.Element {
   const [posts, setPosts] = useState<Post[]>(
     postsPagination.results.map(fixResults) || []
   );
@@ -75,10 +80,12 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
               <h3>{data.title}</h3>
               <p>{data.subtitle}</p>
               <footer>
-                <div>
-                  <img src="/calendar.svg" alt="Data publicação" />
-                  <span>{first_publication_date}</span>
-                </div>
+                {first_publication_date && (
+                  <div>
+                    <img src="/calendar.svg" alt="Data publicação" />
+                    <span>{first_publication_date}</span>
+                  </div>
+                )}
                 <div>
                   <img src="/user.svg" alt="Autor" />
                   <span>{data.author}</span>
@@ -94,22 +101,31 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
             </button>
           </div>
         )}
+        {preview && <ExitPreviewButton />}
       </main>
     </>
   );
 }
 
-export const getStaticProps: GetStaticProps<HomeProps> = async () => {
+export const getStaticProps: GetStaticProps<HomeProps> = async ({
+  preview = false,
+  previewData,
+}) => {
   const prismic = getPrismicClient();
   const postsResponse = await prismic.query(
     [Prismic.Predicates.at('document.type', 'posts')],
-    { pageSize: 1 }
+    {
+      pageSize: 5,
+      ref: previewData?.ref ?? null,
+      orderings: '[document.first_publication_date desc]',
+    }
   );
 
   const { results } = postsResponse;
 
   return {
     props: {
+      preview,
       postsPagination: {
         next_page: postsResponse.next_page,
         results,
